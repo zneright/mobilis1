@@ -126,47 +126,4 @@ const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, active
                 })}
 
                 {/* Keys */}
-                <div className="col-span-1 md:col-span-3 bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 sm:p-8 shadow-xl">
-                    {externalWallet ? (
-                        <div className="flex flex-col items-center justify-center py-6 text-center">
-                            <LinkIcon className="w-12 h-12 text-blue-500 mb-4 opacity-50" />
-                            <h4 className="text-lg font-bold mb-2">External Web3 Connected</h4>
-                            <p className="text-gray-500 text-sm mb-4">You are currently managing your assets via a third-party Stellar application.</p>
-                            <code className="bg-gray-50 dark:bg-black/40 p-3 rounded-xl text-xs break-all border border-gray-200 dark:border-white/5">{externalWallet}</code>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-4 mb-6 flex gap-3 text-xs text-red-600 dark:text-red-400">
-                                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                                <p>Do not expose your secret seed key. These values control your internal assets on the Stellar Network.</p>
-                            </div>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-xs font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-2">Public Address</label>
-                                    <div className="flex gap-2">
-                                        <code className="flex-1 bg-gray-50 dark:bg-black/40 p-4 rounded-xl text-xs break-all border border-gray-200 dark:border-white/5">{activePubKey}</code>
-                                        <button onClick={() => navigator.clipboard.writeText(activePubKey!)} className="p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10"><Copy className="w-4 h-4" /></button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold tracking-widest text-gray-500 dark:text-gray-400 uppercase mb-2">Secret Seed Phrase</label>
-                                    <div className="flex gap-2">
-                                        <code className="flex-1 bg-gray-50 dark:bg-black/40 p-4 rounded-xl text-xs break-all border border-gray-200 dark:border-white/5 select-none">
-                                            {showSecret ? stellarData.secret : 'S•••••••••••••••••••••••••••••••••••••••••••••••••••••••'}
-                                        </code>
-                                        <button onClick={() => setShowSecret(!showSecret)} className="p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10">
-                                            {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                        </button>
-                                        <button onClick={() => navigator.clipboard.writeText(stellarData.secret)} className="p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-200 dark:hover:bg-white/10"><Copy className="w-4 h-4" /></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-export default VaultTab;
+                <div className="col-span-1 md:col-span-3 bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 sm

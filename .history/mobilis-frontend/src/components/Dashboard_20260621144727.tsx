@@ -565,30 +565,29 @@ const Dashboard: React.FC = () => {
             const coopPubKey = coopSnap.docs[0].data().publicKey;
 
             // ==========================================
-            // 2. CALCULATE PRINCIPAL + FEES
+            // 2. CALCULATE FEES
             // ==========================================
 
-            // Coop gets the Principal (100%) PLUS their Fee (0.3%) = 100.3% of debt
-            const totalToCoopAmount = (debtState * 1.003).toFixed(7).toString();
+            const totalFee = debtState * 0.005; // 0.5% total
 
-            // Superadmin gets just their 0.2% Fee
+            // 0.3% to the Cooperative
+            const coopFeeAmount = (debtState * 0.003).toFixed(7).toString();
+
+            // 0.2% to the Superadmin
             const superadminFeeAmount = (debtState * 0.002).toFixed(7).toString();
 
-            // Used for logging
-            const totalFee = debtState * 0.005;
-
             // ==========================================
-            // 3. TRANSACTION 1: ROUTE PRINCIPAL AND FEES
+            // 3. TRANSACTION 1: ROUTE FEES (NATIVE PAYMENTS)
             // ==========================================
-            console.log("Step 1: Routing Principal & Fees...");
+            console.log("Step 1: Routing Fees...");
             let account = await server.getAccount(activePubKey);
 
-            let paymentTxBuilder = new TransactionBuilder(account, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
-                // Route Principal + 0.3% to Cooperative
+            let feeTxBuilder = new TransactionBuilder(account, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
+                // Route 0.3% to Cooperative
                 .addOperation(Operation.payment({
                     destination: coopPubKey,
                     asset: Asset.native(),
-                    amount: totalToCoopAmount
+                    amount: coopFeeAmount
                 }))
                 // Route 0.2% to Superadmin
                 .addOperation(Operation.payment({
@@ -598,24 +597,24 @@ const Dashboard: React.FC = () => {
                 }))
                 .setTimeout(30);
 
-            const builtPaymentTx = paymentTxBuilder.build();
+            const builtFeeTx = feeTxBuilder.build();
 
-            const paymentResponse = await signAndSubmitTx(server, builtPaymentTx);
+            const feeResponse = await signAndSubmitTx(server, builtFeeTx);
 
-            if (paymentResponse.status === "ERROR") throw new Error(`Payment failed: ${JSON.stringify(paymentResponse.errorResult)}`);
+            if (feeResponse.status === "ERROR") throw new Error(`Fee payment failed: ${JSON.stringify(feeResponse.errorResult)}`);
 
-            // Wait for Payment TX to clear
-            let paymentTxResult = await server.getTransaction(paymentResponse.hash);
-            while (paymentTxResult.status === "NOT_FOUND" || paymentTxResult.status === "PENDING") {
+            // Wait for Fee TX to clear
+            let feeTxResult = await server.getTransaction(feeResponse.hash);
+            while (feeTxResult.status === "NOT_FOUND" || feeTxResult.status === "PENDING") {
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                paymentTxResult = await server.getTransaction(paymentResponse.hash);
+                feeTxResult = await server.getTransaction(feeResponse.hash);
             }
-            if (paymentTxResult.status !== "SUCCESS") throw new Error(`Payment transaction failed on ledger: ${paymentTxResult.status}`);
+            if (feeTxResult.status !== "SUCCESS") throw new Error(`Fee transaction failed on ledger: ${feeTxResult.status}`);
 
             // ==========================================
             // 4. TRANSACTION 2: SETTLE LOAN (SMART CONTRACT)
             // ==========================================
-            console.log("Step 2: Settling Smart Contract Debt Ledger...");
+            console.log("Step 2: Settling Smart Contract Debt...");
 
             // Fetch account again to get the incremented sequence number
             account = await server.getAccount(activePubKey);
@@ -643,7 +642,7 @@ const Dashboard: React.FC = () => {
             // ==========================================
             await addDoc(collection(db, 'transactions'), {
                 txHash: contractResponse.hash,
-                paymentTxHash: paymentResponse.hash, // Logging the physical transfer
+                feeTxHash: feeResponse.hash,
                 senderUid: stellarData?.uid,
                 senderName: (stellarData as any)?.fullName || 'Node Operator',
                 amountSettled: debtState.toString(),
@@ -655,7 +654,7 @@ const Dashboard: React.FC = () => {
             });
 
             setDebtState(0);
-            alert(`Settlement Complete! Principal and fees successfully routed to ${userAffiliation} and the Superadmin.`);
+            alert(`Settlement Complete! Loan cleared and fees successfully routed to ${userAffiliation} and the Superadmin.`);
 
             setTimeout(() => fetchLedgerData(), 3000);
 

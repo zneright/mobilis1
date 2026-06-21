@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Copy, AlertTriangle, ArrowDownLeft, ArrowUpRight, Banknote, RefreshCw, Link as LinkIcon, Unlink, Droplet } from 'lucide-react';
-
+import { getAuth, signOut } from 'firebase/auth';
 interface VaultTabProps {
     stellarData: any;
     externalWallet: string | null;
@@ -14,8 +14,8 @@ interface VaultTabProps {
     handleDisconnectWallet: () => void;
     setShowReceiveModal: (val: boolean) => void;
     setShowSendModal: (val: boolean) => void;
-    appNetwork?: 'TESTNET';
-    refreshData: () => Promise<void>;
+    appNetwork?: 'TESTNET' | 'PUBLIC';
+    refreshData: () => Promise<void>; // Added to trigger fetch after funding
 }
 
 const PHP_EXCHANGE_RATE = 60.69;
@@ -86,14 +86,16 @@ const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, active
 
                 {/* Actions */}
                 <div className="col-span-1 bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 shadow-xl flex flex-col gap-3 justify-center min-h-[200px]">
-                    {/* Always visible since app is strictly Testnet */}
-                    <button
-                        onClick={handleFundTestnet}
-                        disabled={isFunding}
-                        className="w-full py-3.5 px-4 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-xl font-bold text-sm flex items-center justify-between text-yellow-600 dark:text-yellow-400 transition-colors"
-                    >
-                        <span className="flex items-center gap-3"><Droplet className="w-4 h-4" /> {isFunding ? 'Funding...' : 'Drop Testnet XLM'}</span>
-                    </button>
+                    {/* NEW: Friendbot Funding Button (Only visible on Testnet) */}
+                    {appNetwork === 'TESTNET' && (
+                        <button
+                            onClick={handleFundTestnet}
+                            disabled={isFunding}
+                            className="w-full py-3.5 px-4 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-xl font-bold text-sm flex items-center justify-between text-yellow-600 dark:text-yellow-400 transition-colors"
+                        >
+                            <span className="flex items-center gap-3"><Droplet className="w-4 h-4" /> {isFunding ? 'Funding...' : 'Drop Testnet XLM'}</span>
+                        </button>
+                    )}
 
                     <button onClick={() => setShowReceiveModal(true)} className="w-full py-3.5 px-4 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-sm flex items-center justify-between transition-colors">
                         <span className="flex items-center gap-3"><ArrowDownLeft className="w-4 h-4 text-emerald-500" /> Receive</span>

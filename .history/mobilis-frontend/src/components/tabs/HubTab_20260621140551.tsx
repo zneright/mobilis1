@@ -112,4 +112,4 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
     );
 };
 
-export default HubTab;  
+export default HubTab;

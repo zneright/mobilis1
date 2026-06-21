@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, onSnapshot, setDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, onSnapshot, setDoc, addDoc } from 'firebase/firestore';
 import {
     Keypair,
     Networks,
@@ -380,7 +380,7 @@ const Dashboard: React.FC = () => {
         } finally { setIsProcessing(false); }
     };
 
-    // --- DRIVER: AUTO-APPROVE ADVANCE ---
+    // --- DRIVER: REQUEST ADVANCE ---
     const handleRequestAdvance = async (amount: number) => {
         if (!activePubKey) return;
 
@@ -393,60 +393,7 @@ const Dashboard: React.FC = () => {
 
         try {
             const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
-            const server = new rpc.Server(RPC_SERVER);
 
-            // ==========================================
-            // STEP 1: Fetch Cooperative Secret Key from DB
-            // ==========================================
-            const coopName = (stellarData as any).todaAffiliation;
-            const coopQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('coopName', '==', coopName));
-            const coopSnap = await getDocs(coopQuery);
-
-            if (coopSnap.empty) throw new Error("Cooperative admin account not found in database.");
-
-            const coopData = coopSnap.docs[0].data();
-            const coopSecret = coopData.secret;
-
-            if (!coopSecret || coopSecret.trim() === "") {
-                throw new Error("Cooperative Secret Key is missing in Firestore. The system cannot auto-fund.");
-            }
-
-            console.log("Auto-Approving: Transferring physical XLM from Coop Treasury...");
-
-            // ==========================================
-            // STEP 2: Auto-Fund Driver (Signed by Coop)
-            // ==========================================
-            const coopKeypair = Keypair.fromSecret(coopSecret);
-            const coopAccount = await server.getAccount(coopKeypair.publicKey());
-
-            let fundTxBuilder = new TransactionBuilder(coopAccount, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
-                .addOperation(Operation.payment({
-                    destination: activePubKey,
-                    asset: Asset.native(),
-                    amount: borrowVal.toString()
-                }))
-                .setTimeout(30)
-                .build();
-
-            // Sign with the Coop's borrowed secret key
-            fundTxBuilder.sign(coopKeypair);
-            const fundResponse = await server.sendTransaction(fundTxBuilder);
-
-            if (fundResponse.status === "ERROR") throw new Error("Failed to transfer funds from Coop wallet.");
-
-            // Wait for funding transaction to clear the ledger
-            let fundTxResult = await server.getTransaction(fundResponse.hash);
-            while (fundTxResult.status === "NOT_FOUND" || fundTxResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                fundTxResult = await server.getTransaction(fundResponse.hash);
-            }
-
-            console.log("Funds transferred. Updating Smart Contract Ledger...");
-
-            // ==========================================
-            // STEP 3: Update Smart Contract Debt 
-            // ==========================================
-            // Note: executeContractCall automatically handles the driver's signature
             await executeContractCall("request_advance", [
                 nativeToScVal(activePubKey, { type: 'address' }),
                 nativeToScVal(Math.floor(borrowVal * 10000000).toString(), { type: 'i128' })
@@ -454,218 +401,63 @@ const Dashboard: React.FC = () => {
 
             setDebtState(borrowVal); // Instant UI feedback
 
-            // ==========================================
-            // STEP 4: Log to Firestore
-            // ==========================================
             await addDoc(collection(db, 'transactions'), {
-                txHash: fundResponse.hash, // Log the physical transfer hash
-                senderUid: coopData.uid,
-                senderName: coopData.coopName,
-                coopName: coopData.coopName,
+                txHash: "SMART_CONTRACT_EXECUTION",
+                senderUid: "CONTRACT_POOL",
+                senderName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'SuperAdmin Pool',
+                coopName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'N/A',
                 plateNumber: (stellarData as any)?.plateNumber || 'N/A',
                 amount: borrowVal.toString(),
                 asset: 'XLM',
-                type: 'AUTO_LOAN_ADVANCE',
+                type: 'LOAN_ADVANCE',
                 destination: activePubKey,
                 network: appNetwork,
                 timestamp: new Date().toISOString()
             });
 
-            alert(`Success! ${borrowVal} XLM advance has been automatically approved and deposited into your wallet.`);
-
+            alert(`Success! ${borrowVal} XLM advance has been successfully issued from the cooperative pool.`);
+            // ⚠️ FIX: 3-Second Delay
             setTimeout(() => fetchLedgerData(), 3000);
-
         } catch (e: any) {
-            console.error("Auto-Approve Failed:", e);
-            alert(`Auto-Approve Failed: ${e.message}`);
+            console.error("[Dashboard -> handleRequestAdvance] Smart Contract Revert Data:", e);
+            alert(`Transaction Reverted: The cooperative pool may have insufficient liquidity, or you lack the XLM required for transaction fees.`);
         } finally {
             setIsProcessing(false);
         }
     };
 
-    // --- ADMIN: APPROVE AND FUND ADVANCE ---
-    const handleApproveAdvance = async (requestId: string, driverPubKey: string, amount: number) => {
-        if (!activePubKey) return;
-        setIsProcessing(true);
-
-        try {
-            const server = new rpc.Server(RPC_SERVER);
-            const contract = new Contract(CONTRACT_ID);
-
-            console.log("Step 1: Sending physical XLM to Driver...");
-            let account = await server.getAccount(activePubKey);
-
-            // Transaction 1: Send the physical XLM from Admin wallet to Driver wallet
-            let fundTxBuilder = new TransactionBuilder(account, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
-                .addOperation(Operation.payment({
-                    destination: driverPubKey,
-                    asset: Asset.native(),
-                    amount: amount.toString()
-                }))
-                .setTimeout(30);
-
-            const fundResponse = await signAndSubmitTx(server, fundTxBuilder.build());
-            if (fundResponse.status === "ERROR") throw new Error(`Funding failed: ${JSON.stringify(fundResponse.errorResult)}`);
-
-            // Wait for funding to clear
-            let fundTxResult = await server.getTransaction(fundResponse.hash);
-            while (fundTxResult.status === "NOT_FOUND" || fundTxResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                fundTxResult = await server.getTransaction(fundResponse.hash);
-            }
-
-            console.log("Step 2: Updating Smart Contract Ledger...");
-
-            // Transaction 2: Call the smart contract to officially record the debt
-            account = await server.getAccount(activePubKey); // Fetch incremented sequence
-            let contractTxBuilder = new TransactionBuilder(account, { fee: "10000", networkPassphrase: NETWORK_PASSPHRASE })
-                .addOperation(contract.call("request_advance",
-                    nativeToScVal(driverPubKey, { type: 'address' }),
-                    nativeToScVal(Math.floor(amount * 10000000).toString(), { type: 'i128' })
-                ))
-                .setTimeout(30);
-
-            const preparedContractTx = await server.prepareTransaction(contractTxBuilder.build());
-            const contractResponse = await signAndSubmitTx(server, preparedContractTx);
-
-            // Mark request as completed in Firebase
-            await updateDoc(doc(db, 'advance_requests', requestId), { status: 'approved' });
-
-            alert(`Success! You have routed ${amount} XLM to the driver and updated the ledger.`);
-            setTimeout(() => fetchLedgerData(), 3000);
-
-        } catch (e: any) {
-            console.error("Approval Failed:", e);
-            alert(`Failed to approve: ${e.message}`);
-        } finally {
-            setIsProcessing(false);
-        }
-    };
     const handleSettleLoan = async () => {
         if (!activePubKey || debtState <= 0) return;
         setIsProcessing(true);
 
         try {
-            const server = new rpc.Server(RPC_SERVER);
-            const contract = new Contract(CONTRACT_ID);
+            await executeContractCall("settle_loan", [
+                nativeToScVal(activePubKey, { type: 'address' })
+            ]);
 
-            // ==========================================
-            // 1. FETCH DYNAMIC KEYS FROM FIRESTORE
-            // ==========================================
-
-            const superadminQuery = query(collection(db, 'users'), where('role', '==', 'superadmin'));
-            const superadminSnap = await getDocs(superadminQuery);
-            if (superadminSnap.empty) throw new Error("Superadmin account not found in database.");
-            const superadminPubKey = superadminSnap.docs[0].data().publicKey;
-
-            const userAffiliation = (stellarData as any).todaAffiliation;
-            const coopQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('coopName', '==', userAffiliation));
-            const coopSnap = await getDocs(coopQuery);
-            if (coopSnap.empty) throw new Error(`Cooperative account for ${userAffiliation} not found.`);
-            const coopPubKey = coopSnap.docs[0].data().publicKey;
-
-            // ==========================================
-            // 2. CALCULATE PRINCIPAL + FEES
-            // ==========================================
-
-            // Coop gets the Principal (100%) PLUS their Fee (0.3%) = 100.3% of debt
-            const totalToCoopAmount = (debtState * 1.003).toFixed(7).toString();
-
-            // Superadmin gets just their 0.2% Fee
-            const superadminFeeAmount = (debtState * 0.002).toFixed(7).toString();
-
-            // Used for logging
-            const totalFee = debtState * 0.005;
-
-            // ==========================================
-            // 3. TRANSACTION 1: ROUTE PRINCIPAL AND FEES
-            // ==========================================
-            console.log("Step 1: Routing Principal & Fees...");
-            let account = await server.getAccount(activePubKey);
-
-            let paymentTxBuilder = new TransactionBuilder(account, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
-                // Route Principal + 0.3% to Cooperative
-                .addOperation(Operation.payment({
-                    destination: coopPubKey,
-                    asset: Asset.native(),
-                    amount: totalToCoopAmount
-                }))
-                // Route 0.2% to Superadmin
-                .addOperation(Operation.payment({
-                    destination: superadminPubKey,
-                    asset: Asset.native(),
-                    amount: superadminFeeAmount
-                }))
-                .setTimeout(30);
-
-            const builtPaymentTx = paymentTxBuilder.build();
-
-            const paymentResponse = await signAndSubmitTx(server, builtPaymentTx);
-
-            if (paymentResponse.status === "ERROR") throw new Error(`Payment failed: ${JSON.stringify(paymentResponse.errorResult)}`);
-
-            // Wait for Payment TX to clear
-            let paymentTxResult = await server.getTransaction(paymentResponse.hash);
-            while (paymentTxResult.status === "NOT_FOUND" || paymentTxResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                paymentTxResult = await server.getTransaction(paymentResponse.hash);
-            }
-            if (paymentTxResult.status !== "SUCCESS") throw new Error(`Payment transaction failed on ledger: ${paymentTxResult.status}`);
-
-            // ==========================================
-            // 4. TRANSACTION 2: SETTLE LOAN (SMART CONTRACT)
-            // ==========================================
-            console.log("Step 2: Settling Smart Contract Debt Ledger...");
-
-            // Fetch account again to get the incremented sequence number
-            account = await server.getAccount(activePubKey);
-
-            let contractTxBuilder = new TransactionBuilder(account, { fee: "10000", networkPassphrase: NETWORK_PASSPHRASE })
-                .addOperation(contract.call("settle_loan", nativeToScVal(activePubKey, { type: 'address' })))
-                .setTimeout(30);
-
-            // Smart contract calls DO require prepareTransaction
-            const preparedContractTx = await server.prepareTransaction(contractTxBuilder.build());
-            const contractResponse = await signAndSubmitTx(server, preparedContractTx);
-
-            if (contractResponse.status === "ERROR") throw new Error(`Contract settlement failed: ${JSON.stringify(contractResponse.errorResult)}`);
-
-            // Wait for Contract TX to clear
-            let contractTxResult = await server.getTransaction(contractResponse.hash);
-            while (contractTxResult.status === "NOT_FOUND" || contractTxResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                contractTxResult = await server.getTransaction(contractResponse.hash);
-            }
-            if (contractTxResult.status !== "SUCCESS") throw new Error(`Contract execution failed on ledger: ${contractTxResult.status}`);
-
-            // ==========================================
-            // 5. UPDATE FIRESTORE AND UI
-            // ==========================================
             await addDoc(collection(db, 'transactions'), {
-                txHash: contractResponse.hash,
-                paymentTxHash: paymentResponse.hash, // Logging the physical transfer
+                txHash: "SMART_CONTRACT_EXECUTION_SETTLED",
                 senderUid: stellarData?.uid,
                 senderName: (stellarData as any)?.fullName || 'Node Operator',
-                amountSettled: debtState.toString(),
-                feePaid: totalFee.toString(),
+                amount: debtState.toString(),
                 asset: 'XLM',
-                type: 'SETTLEMENT_WITH_ROUTED_FEES',
+                type: 'SETTLEMENT',
                 network: appNetwork,
                 timestamp: new Date().toISOString()
             });
 
             setDebtState(0);
-            alert(`Settlement Complete! Principal and fees successfully routed to ${userAffiliation} and the Superadmin.`);
-
+            alert(`Settlement Complete! Fees have been routed by the Smart Contract.`);
+            // ⚠️ FIX: 3-Second Delay
             setTimeout(() => fetchLedgerData(), 3000);
-
         } catch (e: any) {
             console.error("[Dashboard -> handleSettleLoan] Transaction Failed:", e);
-            alert(`Transaction Failed: ${e.message || "Ensure you have sufficient balance to cover the debt and routing fees."}`);
+            alert(`Transaction Failed: Ensure you have sufficient balance to cover the debt and gas fees.`);
         } finally {
             setIsProcessing(false);
         }
     };
+
     const formatCurrency = (amount: number | string) => {
         const num = typeof amount === 'string' ? parseFloat(amount) : amount;
         if (currencyMode === 'PHP') return `₱ ${(num * PHP_EXCHANGE_RATE).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

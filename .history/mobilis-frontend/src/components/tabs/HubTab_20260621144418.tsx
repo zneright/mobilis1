@@ -14,6 +14,7 @@ interface HubTabProps {
     isProcessing: boolean;
     handleRequestAdvance: (amount: number) => Promise<void>;
     handleInjectLiquidity: (amount: number) => Promise<void>;
+    handleApproveAdvance: (requestId: string, driverPubKey: string, amount: number) => Promise<void>;
     handleSettleLoan: () => Promise<void>;
     appNetwork: 'TESTNET';
 }
@@ -21,7 +22,7 @@ interface HubTabProps {
 const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, setCurrencyMode, formatCurrency, debtState, isProcessing, handleRequestAdvance, handleInjectLiquidity, handleSettleLoan }) => {
     const [customAmount, setCustomAmount] = useState<string>('15');
     const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
-
+    const [pendingAdvances, setPendingAdvances] = useState<any[]>([]);
     useEffect(() => {
         const fetchPendingAccounts = async () => {
             if (!isAdmin) return;
@@ -112,4 +113,4 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
     );
 };
 
-export default HubTab;  
+export default HubTab;

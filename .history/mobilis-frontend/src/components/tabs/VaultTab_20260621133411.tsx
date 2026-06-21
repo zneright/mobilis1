@@ -14,14 +14,13 @@ interface VaultTabProps {
     handleDisconnectWallet: () => void;
     setShowReceiveModal: (val: boolean) => void;
     setShowSendModal: (val: boolean) => void;
-    appNetwork?: 'TESTNET';
-    refreshData: () => Promise<void>;
+    appNetwork?: 'TESTNET' | 'PUBLIC'; // Made optional so it won't crash if missing
 }
 
 const PHP_EXCHANGE_RATE = 60.69;
 const USDC_EXCHANGE_RATE = 58.00;
 
-const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, activePubKey, xlmBalance, assetBalances, currencyMode, setCurrencyMode, formatCurrency, setShowWalletModal, handleDisconnectWallet, setShowReceiveModal, setShowSendModal, appNetwork, refreshData }) => {
+const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, activePubKey, xlmBalance, assetBalances, currencyMode, setCurrencyMode, formatCurrency, setShowWalletModal, handleDisconnectWallet, setShowReceiveModal, setShowSendModal, appNetwork }) => {
     const [showSecret, setShowSecret] = useState(false);
     const [isFunding, setIsFunding] = useState(false);
 
@@ -33,15 +32,11 @@ const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, active
             const response = await fetch(`https://friendbot.stellar.org/?addr=${activePubKey}`);
             if (response.ok) {
                 alert("Success! 10,000 Testnet XLM has been deposited to your account.");
-                // Immediately pull new data after funding
-                await refreshData();
             } else {
                 const errorData = await response.json();
-                console.error("[VaultTab -> handleFundTestnet] API Error Details:", errorData);
                 alert(`Friendbot failed: ${errorData.detail || "Account may already be funded or network is busy."}`);
             }
         } catch (error) {
-            console.error("[VaultTab -> handleFundTestnet] Network/Fetch Error:", error);
             alert("Network error: Could not reach Stellar Friendbot.");
         } finally {
             setIsFunding(false);
@@ -86,14 +81,16 @@ const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, active
 
                 {/* Actions */}
                 <div className="col-span-1 bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-[2rem] p-6 shadow-xl flex flex-col gap-3 justify-center min-h-[200px]">
-                    {/* Always visible since app is strictly Testnet */}
-                    <button
-                        onClick={handleFundTestnet}
-                        disabled={isFunding}
-                        className="w-full py-3.5 px-4 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-xl font-bold text-sm flex items-center justify-between text-yellow-600 dark:text-yellow-400 transition-colors"
-                    >
-                        <span className="flex items-center gap-3"><Droplet className="w-4 h-4" /> {isFunding ? 'Funding...' : 'Drop Testnet XLM'}</span>
-                    </button>
+                    {/* NEW: Friendbot Funding Button (Only visible on Testnet) */}
+                    {appNetwork === 'TESTNET' && (
+                        <button
+                            onClick={handleFundTestnet}
+                            disabled={isFunding}
+                            className="w-full py-3.5 px-4 bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 rounded-xl font-bold text-sm flex items-center justify-between text-yellow-600 dark:text-yellow-400 transition-colors"
+                        >
+                            <span className="flex items-center gap-3"><Droplet className="w-4 h-4" /> {isFunding ? 'Funding...' : 'Drop Testnet XLM'}</span>
+                        </button>
+                    )}
 
                     <button onClick={() => setShowReceiveModal(true)} className="w-full py-3.5 px-4 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-sm flex items-center justify-between transition-colors">
                         <span className="flex items-center gap-3"><ArrowDownLeft className="w-4 h-4 text-emerald-500" /> Receive</span>
@@ -107,7 +104,7 @@ const VaultTab: React.FC<VaultTabProps> = ({ stellarData, externalWallet, active
                 </div>
 
                 {/* Multi-Asset List */}
-                {assetBalances && assetBalances.map((asset, idx) => {
+                {assetBalances.map((asset, idx) => {
                     const isNative = asset.asset_type === 'native';
                     const code = isNative ? 'XLM' : asset.asset_code;
                     const bal = parseFloat(asset.balance);

@@ -14,7 +14,7 @@ interface HubTabProps {
     isProcessing: boolean;
     handleRequestAdvance: (amount: number) => Promise<void>;
     handleInjectLiquidity: (amount: number) => Promise<void>;
-    handleSettleLoan: () => Promise<void>;
+    handleSettleLoan: () => Promise<void>;    
     appNetwork: 'TESTNET';
 }
 
@@ -112,4 +112,4 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
     );
 };
 
-export default HubTab;  
+export default HubTab;

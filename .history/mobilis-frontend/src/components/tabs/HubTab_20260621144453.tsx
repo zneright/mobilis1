@@ -14,6 +14,7 @@ interface HubTabProps {
     isProcessing: boolean;
     handleRequestAdvance: (amount: number) => Promise<void>;
     handleInjectLiquidity: (amount: number) => Promise<void>;
+    handleApproveAdvance: (requestId: string, driverPubKey: string, amount: number) => Promise<void>;
     handleSettleLoan: () => Promise<void>;
     appNetwork: 'TESTNET';
 }
@@ -21,7 +22,7 @@ interface HubTabProps {
 const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, setCurrencyMode, formatCurrency, debtState, isProcessing, handleRequestAdvance, handleInjectLiquidity, handleSettleLoan }) => {
     const [customAmount, setCustomAmount] = useState<string>('15');
     const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
-
+    const [pendingAdvances, setPendingAdvances] = useState<any[]>([]);
     useEffect(() => {
         const fetchPendingAccounts = async () => {
             if (!isAdmin) return;
@@ -40,7 +41,26 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
         };
         fetchPendingAccounts();
     }, [stellarData, isAdmin]);
-
+    useEffect(() => {
+        const fetchAdvances = async () => {
+            if (!isAdmin) return;
+            try {
+                // Fetch advances matching this admin's cooperative
+                const q = query(
+                    collection(db, 'advance_requests'),
+                    where('coopName', '==', stellarData.coopName),
+                    where('status', '==', 'pending')
+                );
+                const snapshot = await getDocs(q);
+                const advances: any[] = [];
+                snapshot.forEach(doc => advances.push({ id: doc.id, ...doc.data() }));
+                setPendingAdvances(advances);
+            } catch (error) {
+                console.error("Error fetching advances:", error);
+            }
+        };
+        fetchAdvances();
+    }, [stellarData, isAdmin]);
     const handleApprove = async (uid: string) => {
         try {
             await updateDoc(doc(db, 'users', uid), { status: 'approved' });
@@ -108,8 +128,30 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
                     )}
                 </div>
             )}
+            {/* --- PENDING ADVANCE REQUESTS --- */}
+            <h3 className="text-xl font-bold mb-6 mt-12 flex items-center gap-3">
+                Pending Fuel Advances <span className="px-3 py-1 bg-gray-200 dark:bg-white/10 rounded-full text-xs font-mono">{pendingAdvances.length}</span>
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {pendingAdvances.map(req => (
+                    <div key={req.id} className="bg-white dark:bg-[#0a0a14] border border-blue-200 dark:border-blue-500/20 rounded-2xl p-6 flex flex-col justify-between shadow-sm">
+                        <div className="mb-4">
+                            <h4 className="text-lg font-bold">{req.driverName}</h4>
+                            <p className="text-sm text-gray-500 font-mono mt-2">PLATE: {req.plateNumber}</p>
+                            <p className="text-2xl font-black text-blue-500 mt-2">{req.amount} XLM</p>
+                        </div>
+                        <button
+                            onClick={() => handleApproveAdvance(req.id, req.driverPubKey, req.amount)}
+                            disabled={isProcessing}
+                            className="w-full py-3 bg-blue-500 text-white font-bold rounded-xl text-sm hover:bg-blue-600 disabled:opacity-50"
+                        >
+                            {isProcessing ? "Signing..." : "Approve & Fund Wallet"}
+                        </button>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 };
 
-export default HubTab;  
+export default HubTab;

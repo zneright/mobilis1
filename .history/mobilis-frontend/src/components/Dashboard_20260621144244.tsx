@@ -380,104 +380,35 @@ const Dashboard: React.FC = () => {
         } finally { setIsProcessing(false); }
     };
 
-    // --- DRIVER: AUTO-APPROVE ADVANCE ---
+    // --- DRIVER: REQUEST ADVANCE (FIREBASE ONLY) ---
     const handleRequestAdvance = async (amount: number) => {
         if (!activePubKey) return;
 
         if (debtState > 0 && stellarData?.role === 'driver') {
-            alert(`Request Blocked: You currently have a pending debt of ${debtState} XLM. You must settle this before borrowing again.`);
+            alert(`Request Blocked: You currently have a pending debt of ${debtState} XLM.`);
             return;
         }
 
         setIsProcessing(true);
-
         try {
             const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
-            const server = new rpc.Server(RPC_SERVER);
 
-            // ==========================================
-            // STEP 1: Fetch Cooperative Secret Key from DB
-            // ==========================================
-            const coopName = (stellarData as any).todaAffiliation;
-            const coopQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('coopName', '==', coopName));
-            const coopSnap = await getDocs(coopQuery);
-
-            if (coopSnap.empty) throw new Error("Cooperative admin account not found in database.");
-
-            const coopData = coopSnap.docs[0].data();
-            const coopSecret = coopData.secret;
-
-            if (!coopSecret || coopSecret.trim() === "") {
-                throw new Error("Cooperative Secret Key is missing in Firestore. The system cannot auto-fund.");
-            }
-
-            console.log("Auto-Approving: Transferring physical XLM from Coop Treasury...");
-
-            // ==========================================
-            // STEP 2: Auto-Fund Driver (Signed by Coop)
-            // ==========================================
-            const coopKeypair = Keypair.fromSecret(coopSecret);
-            const coopAccount = await server.getAccount(coopKeypair.publicKey());
-
-            let fundTxBuilder = new TransactionBuilder(coopAccount, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
-                .addOperation(Operation.payment({
-                    destination: activePubKey,
-                    asset: Asset.native(),
-                    amount: borrowVal.toString()
-                }))
-                .setTimeout(30)
-                .build();
-
-            // Sign with the Coop's borrowed secret key
-            fundTxBuilder.sign(coopKeypair);
-            const fundResponse = await server.sendTransaction(fundTxBuilder);
-
-            if (fundResponse.status === "ERROR") throw new Error("Failed to transfer funds from Coop wallet.");
-
-            // Wait for funding transaction to clear the ledger
-            let fundTxResult = await server.getTransaction(fundResponse.hash);
-            while (fundTxResult.status === "NOT_FOUND" || fundTxResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                fundTxResult = await server.getTransaction(fundResponse.hash);
-            }
-
-            console.log("Funds transferred. Updating Smart Contract Ledger...");
-
-            // ==========================================
-            // STEP 3: Update Smart Contract Debt 
-            // ==========================================
-            // Note: executeContractCall automatically handles the driver's signature
-            await executeContractCall("request_advance", [
-                nativeToScVal(activePubKey, { type: 'address' }),
-                nativeToScVal(Math.floor(borrowVal * 10000000).toString(), { type: 'i128' })
-            ]);
-
-            setDebtState(borrowVal); // Instant UI feedback
-
-            // ==========================================
-            // STEP 4: Log to Firestore
-            // ==========================================
-            await addDoc(collection(db, 'transactions'), {
-                txHash: fundResponse.hash, // Log the physical transfer hash
-                senderUid: coopData.uid,
-                senderName: coopData.coopName,
-                coopName: coopData.coopName,
+            // Instead of executing the contract, we send a request to the Cooperative Admin
+            await addDoc(collection(db, 'advance_requests'), {
+                driverUid: stellarData?.uid,
+                driverName: (stellarData as any)?.fullName || 'Driver',
+                driverPubKey: activePubKey,
                 plateNumber: (stellarData as any)?.plateNumber || 'N/A',
-                amount: borrowVal.toString(),
-                asset: 'XLM',
-                type: 'AUTO_LOAN_ADVANCE',
-                destination: activePubKey,
-                network: appNetwork,
+                coopName: (stellarData as any)?.todaAffiliation,
+                amount: borrowVal,
+                status: 'pending',
                 timestamp: new Date().toISOString()
             });
 
-            alert(`Success! ${borrowVal} XLM advance has been automatically approved and deposited into your wallet.`);
-
-            setTimeout(() => fetchLedgerData(), 3000);
-
+            alert(`Request Submitted! Waiting for your Cooperative Admin to approve and route the ${borrowVal} XLM.`);
         } catch (e: any) {
-            console.error("Auto-Approve Failed:", e);
-            alert(`Auto-Approve Failed: ${e.message}`);
+            console.error("Failed to submit request:", e);
+            alert(`Failed to submit request to Admin.`);
         } finally {
             setIsProcessing(false);
         }
@@ -565,30 +496,29 @@ const Dashboard: React.FC = () => {
             const coopPubKey = coopSnap.docs[0].data().publicKey;
 
             // ==========================================
-            // 2. CALCULATE PRINCIPAL + FEES
+            // 2. CALCULATE FEES
             // ==========================================
 
-            // Coop gets the Principal (100%) PLUS their Fee (0.3%) = 100.3% of debt
-            const totalToCoopAmount = (debtState * 1.003).toFixed(7).toString();
+            const totalFee = debtState * 0.005; // 0.5% total
 
-            // Superadmin gets just their 0.2% Fee
+            // 0.3% to the Cooperative
+            const coopFeeAmount = (debtState * 0.003).toFixed(7).toString();
+
+            // 0.2% to the Superadmin
             const superadminFeeAmount = (debtState * 0.002).toFixed(7).toString();
 
-            // Used for logging
-            const totalFee = debtState * 0.005;
-
             // ==========================================
-            // 3. TRANSACTION 1: ROUTE PRINCIPAL AND FEES
+            // 3. TRANSACTION 1: ROUTE FEES (NATIVE PAYMENTS)
             // ==========================================
-            console.log("Step 1: Routing Principal & Fees...");
+            console.log("Step 1: Routing Fees...");
             let account = await server.getAccount(activePubKey);
 
-            let paymentTxBuilder = new TransactionBuilder(account, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
-                // Route Principal + 0.3% to Cooperative
+            let feeTxBuilder = new TransactionBuilder(account, { fee: "1000", networkPassphrase: NETWORK_PASSPHRASE })
+                // Route 0.3% to Cooperative
                 .addOperation(Operation.payment({
                     destination: coopPubKey,
                     asset: Asset.native(),
-                    amount: totalToCoopAmount
+                    amount: coopFeeAmount
                 }))
                 // Route 0.2% to Superadmin
                 .addOperation(Operation.payment({
@@ -598,24 +528,24 @@ const Dashboard: React.FC = () => {
                 }))
                 .setTimeout(30);
 
-            const builtPaymentTx = paymentTxBuilder.build();
+            const builtFeeTx = feeTxBuilder.build();
 
-            const paymentResponse = await signAndSubmitTx(server, builtPaymentTx);
+            const feeResponse = await signAndSubmitTx(server, builtFeeTx);
 
-            if (paymentResponse.status === "ERROR") throw new Error(`Payment failed: ${JSON.stringify(paymentResponse.errorResult)}`);
+            if (feeResponse.status === "ERROR") throw new Error(`Fee payment failed: ${JSON.stringify(feeResponse.errorResult)}`);
 
-            // Wait for Payment TX to clear
-            let paymentTxResult = await server.getTransaction(paymentResponse.hash);
-            while (paymentTxResult.status === "NOT_FOUND" || paymentTxResult.status === "PENDING") {
+            // Wait for Fee TX to clear
+            let feeTxResult = await server.getTransaction(feeResponse.hash);
+            while (feeTxResult.status === "NOT_FOUND" || feeTxResult.status === "PENDING") {
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                paymentTxResult = await server.getTransaction(paymentResponse.hash);
+                feeTxResult = await server.getTransaction(feeResponse.hash);
             }
-            if (paymentTxResult.status !== "SUCCESS") throw new Error(`Payment transaction failed on ledger: ${paymentTxResult.status}`);
+            if (feeTxResult.status !== "SUCCESS") throw new Error(`Fee transaction failed on ledger: ${feeTxResult.status}`);
 
             // ==========================================
             // 4. TRANSACTION 2: SETTLE LOAN (SMART CONTRACT)
             // ==========================================
-            console.log("Step 2: Settling Smart Contract Debt Ledger...");
+            console.log("Step 2: Settling Smart Contract Debt...");
 
             // Fetch account again to get the incremented sequence number
             account = await server.getAccount(activePubKey);
@@ -643,7 +573,7 @@ const Dashboard: React.FC = () => {
             // ==========================================
             await addDoc(collection(db, 'transactions'), {
                 txHash: contractResponse.hash,
-                paymentTxHash: paymentResponse.hash, // Logging the physical transfer
+                feeTxHash: feeResponse.hash,
                 senderUid: stellarData?.uid,
                 senderName: (stellarData as any)?.fullName || 'Node Operator',
                 amountSettled: debtState.toString(),
@@ -655,7 +585,7 @@ const Dashboard: React.FC = () => {
             });
 
             setDebtState(0);
-            alert(`Settlement Complete! Principal and fees successfully routed to ${userAffiliation} and the Superadmin.`);
+            alert(`Settlement Complete! Loan cleared and fees successfully routed to ${userAffiliation} and the Superadmin.`);
 
             setTimeout(() => fetchLedgerData(), 3000);
 

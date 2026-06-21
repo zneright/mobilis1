@@ -13,12 +13,13 @@ interface HubTabProps {
     debtState: number;
     isProcessing: boolean;
     handleRequestAdvance: (amount: number) => Promise<void>;
-    handleInjectLiquidity: (amount: number) => Promise<void>;
+    handleInjectLiquidity: (amount: number) => Promise<void>; // Wired up Admin Injection
     handleSettleLoan: () => Promise<void>;
-    appNetwork: 'TESTNET';
+    appNetwork: 'TESTNET' | 'PUBLIC';
+    handleNetworkChange: (network: 'TESTNET' | 'PUBLIC') => void;
 }
 
-const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, setCurrencyMode, formatCurrency, debtState, isProcessing, handleRequestAdvance, handleInjectLiquidity, handleSettleLoan }) => {
+const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, setCurrencyMode, formatCurrency, debtState, isProcessing, handleRequestAdvance, handleInjectLiquidity, handleSettleLoan, appNetwork, handleNetworkChange }) => {
     const [customAmount, setCustomAmount] = useState<string>('15');
     const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
 
@@ -53,7 +54,18 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
 
     return (
         <div className="w-full flex flex-col items-center">
-            <div className="w-full max-w-lg mb-4 flex justify-end items-center">
+            <div className="w-full max-w-lg mb-4 flex justify-between items-center">
+                {isAdmin ? (
+                    <select
+                        value={appNetwork}
+                        onChange={(e) => handleNetworkChange(e.target.value as 'TESTNET' | 'PUBLIC')}
+                        className="bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-xl text-xs font-bold font-mono p-2.5 outline-none shadow-sm cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                        <option value="TESTNET">Testnet (Dev)</option>
+                        <option value="PUBLIC">Mainnet (Live)</option>
+                    </select>
+                ) : <div />}
+
                 <button onClick={() => setCurrencyMode(p => p === 'PHP' ? 'XLM' : 'PHP')} className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-mono bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 shadow-sm">
                     <RefreshCw className="w-3.5 h-3.5" /> Display: {currencyMode}
                 </button>
@@ -65,6 +77,8 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
                         <h3 className="text-sm font-bold tracking-widest text-emerald-500 uppercase mb-4">Liquidity Controller</h3>
                         <div className="flex flex-col sm:flex-row items-center gap-4">
                             <input type="number" value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} placeholder="Enter Custom XLM Advance value..." className="w-full sm:flex-1 p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm outline-none focus:border-emerald-500" />
+
+                            {/* Uses the proper handleInjectLiquidity function */}
                             <button onClick={() => handleInjectLiquidity(parseFloat(customAmount))} disabled={isProcessing} className="w-full sm:w-auto px-6 py-4 bg-emerald-500 text-black font-black text-sm rounded-xl hover:bg-emerald-400">
                                 {isProcessing ? "Executing..." : "Inject Asset Pool Loan"}
                             </button>
@@ -112,4 +126,4 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
     );
 };
 
-export default HubTab;  
+export default HubTab;

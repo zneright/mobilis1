@@ -14,6 +14,7 @@ interface HubTabProps {
     isProcessing: boolean;
     handleRequestAdvance: (amount: number) => Promise<void>;
     handleInjectLiquidity: (amount: number) => Promise<void>;
+    handleApproveAdvance: (requestId: string, driverPubKey: string, amount: number) => Promise<void>;
     handleSettleLoan: () => Promise<void>;
     appNetwork: 'TESTNET';
 }
@@ -21,7 +22,7 @@ interface HubTabProps {
 const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, setCurrencyMode, formatCurrency, debtState, isProcessing, handleRequestAdvance, handleInjectLiquidity, handleSettleLoan }) => {
     const [customAmount, setCustomAmount] = useState<string>('15');
     const [pendingUsers, setPendingUsers] = useState<UserData[]>([]);
-
+    const [pendingAdvances, setPendingAdvances] = useState<any[]>([]);
     useEffect(() => {
         const fetchPendingAccounts = async () => {
             if (!isAdmin) return;
@@ -40,7 +41,26 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
         };
         fetchPendingAccounts();
     }, [stellarData, isAdmin]);
-
+    useEffect(() => {
+        const fetchAdvances = async () => {
+            if (!isAdmin) return;
+            try {
+                // Fetch advances matching this admin's cooperative
+                const q = query(
+                    collection(db, 'advance_requests'),
+                    where('coopName', '==', stellarData.coopName),
+                    where('status', '==', 'pending')
+                );
+                const snapshot = await getDocs(q);
+                const advances: any[] = [];
+                snapshot.forEach(doc => advances.push({ id: doc.id, ...doc.data() }));
+                setPendingAdvances(advances);
+            } catch (error) {
+                console.error("Error fetching advances:", error);
+            }
+        };
+        fetchAdvances();
+    }, [stellarData, isAdmin]);
     const handleApprove = async (uid: string) => {
         try {
             await updateDoc(doc(db, 'users', uid), { status: 'approved' });
@@ -112,4 +132,4 @@ const HubTab: React.FC<HubTabProps> = ({ stellarData, isAdmin, currencyMode, set
     );
 };
 
-export default HubTab;  
+export default HubTab;

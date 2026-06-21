@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 
 interface HistoryTabProps {
     txHistory: any[];
-    appNetwork: 'TESTNET';
+    appNetwork: 'TESTNET' | 'PUBLIC';
 }
 
 const HistoryTab: React.FC<HistoryTabProps> = ({ txHistory, appNetwork }) => {
