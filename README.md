@@ -7,8 +7,8 @@ A Soroban-powered automated micro-credit treasury for unbanked transport drivers
 
 ## Timeline
 * Day 1: Smart contract development and unit testing in Soroban.
-* Day 2: Firebase backend setup and Stellar testnet deployment.
-* Day 3: React frontend integration, abstracting wallet keypairs.
+* Day 2: Firebase backend setup and Stellar testnet deployment. React frontend integration, abstracting wallet keypairs
+
 
 ## Stellar Features Used
 * XLM/USDC token transfers.
