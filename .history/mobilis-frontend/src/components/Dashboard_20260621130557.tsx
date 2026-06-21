@@ -299,170 +299,28 @@ const Dashboard: React.FC = () => {
         } catch (error: any) { throw error; } finally { setIsProcessing(false); }
     };
 
-    // --- ADVANCE LOGIC ---
     const handleRequestAdvance = async (amount: number) => {
         if (!activePubKey) return;
-
-        // 1. STRICT FRONTEND DEBT CHECK
-        // If the user has any debt, block the request instantly before touching the ledger.
-        if (debtState > 0 && stellarData?.role === 'driver') {
-            alert(`Request Blocked: You currently have a pending debt of ${debtState} XLM. You must settle this before borrowing again.`);
-            return;
-        }
-
-        setIsProcessing(true);
-
+        const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
         try {
-            const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
-            let coopAddress = '';
-
-            // 2. FETCH COOPERATIVE WALLET (Source of Funds)
-            if (stellarData?.role === 'driver') {
-                const coopQuery = query(
-                    collection(db, 'users'),
-                    where('role', '==', 'admin'),
-                    where('coopName', '==', (stellarData as any).todaAffiliation)
-                );
-                const coopSnap = await getDocs(coopQuery);
-
-                if (!coopSnap.empty) {
-                    coopAddress = coopSnap.docs[0].data().publicKey;
-                } else {
-                    throw new Error(`Critical: Cannot locate the wallet address for cooperative "${(stellarData as any).todaAffiliation}".`);
-                }
-            } else {
-                // If it's the Admin injecting a loan pool, they use their own address
-                coopAddress = activePubKey;
-            }
-
-            // 3. EXECUTE CONTRACT WITH COOP ADDRESS
-            // We now pass the cooperative's address to the contract so it knows where to pull the funds from.
             await executeContractCall("request_advance", [
-                nativeToScVal(activePubKey, { type: 'address' }),       // Destination: Driver
-                nativeToScVal(coopAddress, { type: 'address' }),        // Source: Cooperative Pool
-                nativeToScVal(borrowVal * 10000000, { type: 'i128' })   // Amount
+                nativeToScVal(activePubKey, { type: 'address' }),
+                nativeToScVal(borrowVal * 10000000, { type: 'i128' })
             ]);
-
-            // Update UI state
             setDebtState(borrowVal);
-
-            // 4. LOG TO FIREBASE LEDGER
-            await addDoc(collection(db, 'transactions'), {
-                txHash: "SMART_CONTRACT_EXECUTION", // You can map the actual hash here if executeContractCall returns it
-                senderUid: "CONTRACT_POOL",
-                senderName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'SuperAdmin Pool',
-                coopName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'N/A',
-                plateNumber: (stellarData as any)?.plateNumber || 'N/A',
-                amount: borrowVal.toString(),
-                asset: 'XLM',
-                type: 'LOAN_ADVANCE',
-                destination: activePubKey,
-                network: appNetwork,
-                timestamp: new Date().toISOString()
-            });
-
-            alert(`Success! ${borrowVal} XLM advance has been successfully issued from the cooperative pool.`);
-
-        } catch (e: any) {
-            console.error("Smart Contract Revert Data:", e);
-            // Show the actual error message instead of the generic testnet warning
-            alert(`Transaction Reverted: ${e.message || "The cooperative pool may have insufficient liquidity, or you lack the XLM required for transaction fees."}`);
-        } finally {
-            setIsProcessing(false);
-        }
+            alert(`Success! ${borrowVal} XLM confirmed on the ledger.`);
+        } catch (e) { alert(`Transaction Reverted: Ensure your wallet extension is set to ${appNetwork} and you have funds.`); }
     };
+
     const handleSettleLoan = async () => {
-        if (!activePubKey || debtState <= 0) return;
-        setIsProcessing(true);
-
+        if (!activePubKey) return;
         try {
-            // 1. Calculate Exact Fees
-            const principal = debtState;
-            const superAdminFee = (principal * 0.002).toFixed(7); // 0.2% HQ
-            const coopFee = (principal * 0.003).toFixed(7);       // 0.3% Cooperative
-
-            // 2. Fetch Destination Wallets from Firestore dynamically
-            let superAdminAddress = '';
-            let coopAddress = '';
-
-            const saQuery = query(collection(db, 'users'), where('role', '==', 'superadmin'));
-            const saSnap = await getDocs(saQuery);
-            if (!saSnap.empty) superAdminAddress = saSnap.docs[0].data().publicKey;
-
-            const coopQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('coopName', '==', (stellarData as any).todaAffiliation));
-            const coopSnap = await getDocs(coopQuery);
-            if (!coopSnap.empty) coopAddress = coopSnap.docs[0].data().publicKey;
-
-            if (!superAdminAddress || !coopAddress) {
-                throw new Error("Cannot route fees. Missing Superadmin or Cooperative wallet addresses.");
-            }
-
-            // 3. Build Multi-Operation Atomic Transaction
-            const server = new rpc.Server(RPC_SERVER);
-            const account = await server.getAccount(activePubKey);
-            const contract = new Contract(CONTRACT_ID);
-
-            let txBuilder = new TransactionBuilder(account, { fee: "10000", networkPassphrase: NETWORK_PASSPHRASE })
-                // Op 1: Call the smart contract to clear the debt state
-                .addOperation(contract.call("settle_loan", nativeToScVal(activePubKey, { type: 'address' })))
-                // Op 2: 0.2% Fee Payment to Superadmin
-                .addOperation(Operation.payment({
-                    destination: superAdminAddress,
-                    asset: Asset.native(),
-                    amount: superAdminFee
-                }))
-                // Op 3: 0.3% Fee Payment to Cooperative Admin
-                .addOperation(Operation.payment({
-                    destination: coopAddress,
-                    asset: Asset.native(),
-                    amount: coopFee
-                }));
-
-            let tx = txBuilder.setTimeout(30).build();
-
-            // 4. Sign and Submit
-            const preparedTx = await server.prepareTransaction(tx);
-            const response = await signAndSubmitTx(server, preparedTx);
-
-            if (response.status === "ERROR") throw new Error("Transaction submission failed");
-
-            // Wait for Ledger Confirmation
-            let txResult = await server.getTransaction(response.hash);
-            while (txResult.status === "NOT_FOUND" || txResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                txResult = await server.getTransaction(response.hash);
-            }
-
-            if (txResult.status === "SUCCESS") {
-                // Record the complex settlement to Firebase Logs
-                await addDoc(collection(db, 'transactions'), {
-                    txHash: response.hash,
-                    senderUid: stellarData?.uid,
-                    senderName: (stellarData as any)?.fullName || 'Node Operator',
-                    plateNumber: (stellarData as any)?.plateNumber || 'N/A',
-                    coopName: (stellarData as any)?.todaAffiliation || 'N/A',
-                    amount: principal.toString(),
-                    asset: 'XLM',
-                    type: 'SETTLEMENT',
-                    feesPaid: {
-                        superAdmin: superAdminFee,
-                        coop: coopFee
-                    },
-                    network: appNetwork,
-                    timestamp: new Date().toISOString()
-                });
-
-                setDebtState(0);
-                alert(`Settlement Complete! ${principal} XLM principal cleared. Paid ${superAdminFee} XLM to HQ and ${coopFee} XLM to Cooperative.`);
-            } else {
-                throw new Error("On-chain execution reverted.");
-            }
-        } catch (e: any) {
-            alert(`Transaction Failed: ${e.message}`);
-        } finally {
-            setIsProcessing(false);
-        }
+            await executeContractCall("settle_loan", [nativeToScVal(activePubKey, { type: 'address' })]);
+            setDebtState(0);
+            alert(`Success! Your loan has been fully settled and fees distributed.`);
+        } catch (e) { alert(`Transaction Reverted: Ensure your wallet extension is set to ${appNetwork}.`); }
     };
+
     const formatCurrency = (amount: number | string) => {
         const num = typeof amount === 'string' ? parseFloat(amount) : amount;
         if (currencyMode === 'PHP') return `₱ ${(num * PHP_EXCHANGE_RATE).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

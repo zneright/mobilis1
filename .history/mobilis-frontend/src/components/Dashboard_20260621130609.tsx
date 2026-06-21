@@ -299,78 +299,29 @@ const Dashboard: React.FC = () => {
         } catch (error: any) { throw error; } finally { setIsProcessing(false); }
     };
 
-    // --- ADVANCE LOGIC ---
+    // --- ADVANCE & SETTLEMENT LOGIC ---
     const handleRequestAdvance = async (amount: number) => {
         if (!activePubKey) return;
 
-        // 1. STRICT FRONTEND DEBT CHECK
-        // If the user has any debt, block the request instantly before touching the ledger.
-        if (debtState > 0 && stellarData?.role === 'driver') {
-            alert(`Request Blocked: You currently have a pending debt of ${debtState} XLM. You must settle this before borrowing again.`);
+        // STRICT CHECK: Block new loans if there is a pending balance
+        if (debtState > 0) {
+            alert("Request Blocked: You must settle your pending balance before requesting a new advance.");
             return;
         }
 
-        setIsProcessing(true);
-
+        const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
         try {
-            const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
-            let coopAddress = '';
-
-            // 2. FETCH COOPERATIVE WALLET (Source of Funds)
-            if (stellarData?.role === 'driver') {
-                const coopQuery = query(
-                    collection(db, 'users'),
-                    where('role', '==', 'admin'),
-                    where('coopName', '==', (stellarData as any).todaAffiliation)
-                );
-                const coopSnap = await getDocs(coopQuery);
-
-                if (!coopSnap.empty) {
-                    coopAddress = coopSnap.docs[0].data().publicKey;
-                } else {
-                    throw new Error(`Critical: Cannot locate the wallet address for cooperative "${(stellarData as any).todaAffiliation}".`);
-                }
-            } else {
-                // If it's the Admin injecting a loan pool, they use their own address
-                coopAddress = activePubKey;
-            }
-
-            // 3. EXECUTE CONTRACT WITH COOP ADDRESS
-            // We now pass the cooperative's address to the contract so it knows where to pull the funds from.
             await executeContractCall("request_advance", [
-                nativeToScVal(activePubKey, { type: 'address' }),       // Destination: Driver
-                nativeToScVal(coopAddress, { type: 'address' }),        // Source: Cooperative Pool
-                nativeToScVal(borrowVal * 10000000, { type: 'i128' })   // Amount
+                nativeToScVal(activePubKey, { type: 'address' }),
+                nativeToScVal(borrowVal * 10000000, { type: 'i128' })
             ]);
-
-            // Update UI state
             setDebtState(borrowVal);
-
-            // 4. LOG TO FIREBASE LEDGER
-            await addDoc(collection(db, 'transactions'), {
-                txHash: "SMART_CONTRACT_EXECUTION", // You can map the actual hash here if executeContractCall returns it
-                senderUid: "CONTRACT_POOL",
-                senderName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'SuperAdmin Pool',
-                coopName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'N/A',
-                plateNumber: (stellarData as any)?.plateNumber || 'N/A',
-                amount: borrowVal.toString(),
-                asset: 'XLM',
-                type: 'LOAN_ADVANCE',
-                destination: activePubKey,
-                network: appNetwork,
-                timestamp: new Date().toISOString()
-            });
-
-            alert(`Success! ${borrowVal} XLM advance has been successfully issued from the cooperative pool.`);
-
-        } catch (e: any) {
-            console.error("Smart Contract Revert Data:", e);
-            // Show the actual error message instead of the generic testnet warning
-            alert(`Transaction Reverted: ${e.message || "The cooperative pool may have insufficient liquidity, or you lack the XLM required for transaction fees."}`);
-        } finally {
-            setIsProcessing(false);
+            alert(`Success! ${borrowVal} XLM confirmed on the ledger.`);
+        } catch (e) {
+            alert(`Transaction Reverted: Ensure your wallet extension is set to ${appNetwork} and you have funds.`);
         }
     };
+
     const handleSettleLoan = async () => {
         if (!activePubKey || debtState <= 0) return;
         setIsProcessing(true);

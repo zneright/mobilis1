@@ -7,6 +7,7 @@ interface NavigationProps {
     theme: 'dark' | 'light';
     toggleTheme: () => void;
     onSignOut: () => void;
+    role?: string; // --- NEW: Pass role to customize tabs ---
 }
 
 const Navigation: React.FC<NavigationProps> = ({
@@ -14,13 +15,17 @@ const Navigation: React.FC<NavigationProps> = ({
     setActiveTab,
     theme,
     toggleTheme,
-    onSignOut
+    onSignOut,
+    role
 }) => {
+    const isAdmin = role === 'superadmin' || role === 'admin';
+
+    // --- NEW: Dynamic Tab Labels Based on Role ---
     const tabs = [
-        { id: 'hub', label: 'Control Hub', icon: LayoutDashboard },
-        { id: 'vault', label: 'Wallet Vault', icon: Key },
-        { id: 'history', label: 'Ledger History', icon: History },
-        { id: 'profile', label: 'Profile Settings', icon: UserCog },
+        { id: 'hub', label: isAdmin ? 'Command Center' : 'Control Hub', icon: LayoutDashboard },
+        { id: 'vault', label: isAdmin ? 'Treasury Keys' : 'Wallet Vault', icon: Key },
+        { id: 'history', label: isAdmin ? 'Audit Logs' : 'Ledger History', icon: History },
+        { id: 'profile', label: isAdmin ? 'Coop Settings' : 'Profile Settings', icon: UserCog },
     ] as const;
 
     return (

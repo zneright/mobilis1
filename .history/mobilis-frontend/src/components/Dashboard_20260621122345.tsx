@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, onSnapshot, setDoc } from 'firebase/firestore'; 
 import {
     Keypair,
     Networks,
@@ -15,7 +15,7 @@ import {
     Asset
 } from '@stellar/stellar-sdk';
 import { requestAccess, signTransaction, isConnected, isAllowed } from '@stellar/freighter-api';
-import { Copy, ArrowUpRight, X, Wallet, Globe } from 'lucide-react';
+import { Copy, ArrowUpRight, X, Wallet } from 'lucide-react';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import Sidebar from './Sidebar';
@@ -74,18 +74,15 @@ const Dashboard: React.FC = () => {
 
     // --- REAL-TIME GLOBAL NETWORK SYNC ---
     useEffect(() => {
-        try {
-            const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-                if (docSnap.exists()) {
-                    setAppNetwork(docSnap.data().activeNetwork || 'TESTNET');
-                } else {
-                    setDoc(doc(db, 'settings', 'global'), { activeNetwork: 'TESTNET' }).catch(console.error);
-                }
-            });
-            return () => unsub();
-        } catch (e) {
-            console.error("Network sync error", e);
-        }
+        const unsub = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+            if (docSnap.exists()) {
+                setAppNetwork(docSnap.data().activeNetwork || 'TESTNET');
+            } else {
+                // Initialize if setting doesn't exist yet
+                setDoc(doc(db, 'settings', 'global'), { activeNetwork: 'TESTNET' });
+            }
+        });
+        return () => unsub();
     }, []);
 
     const handleNetworkChange = async (newNetwork: 'TESTNET' | 'PUBLIC') => {
@@ -299,170 +296,28 @@ const Dashboard: React.FC = () => {
         } catch (error: any) { throw error; } finally { setIsProcessing(false); }
     };
 
-    // --- ADVANCE LOGIC ---
     const handleRequestAdvance = async (amount: number) => {
         if (!activePubKey) return;
-
-        // 1. STRICT FRONTEND DEBT CHECK
-        // If the user has any debt, block the request instantly before touching the ledger.
-        if (debtState > 0 && stellarData?.role === 'driver') {
-            alert(`Request Blocked: You currently have a pending debt of ${debtState} XLM. You must settle this before borrowing again.`);
-            return;
-        }
-
-        setIsProcessing(true);
-
+        const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
         try {
-            const borrowVal = stellarData?.role === 'driver' ? 15 : amount;
-            let coopAddress = '';
-
-            // 2. FETCH COOPERATIVE WALLET (Source of Funds)
-            if (stellarData?.role === 'driver') {
-                const coopQuery = query(
-                    collection(db, 'users'),
-                    where('role', '==', 'admin'),
-                    where('coopName', '==', (stellarData as any).todaAffiliation)
-                );
-                const coopSnap = await getDocs(coopQuery);
-
-                if (!coopSnap.empty) {
-                    coopAddress = coopSnap.docs[0].data().publicKey;
-                } else {
-                    throw new Error(`Critical: Cannot locate the wallet address for cooperative "${(stellarData as any).todaAffiliation}".`);
-                }
-            } else {
-                // If it's the Admin injecting a loan pool, they use their own address
-                coopAddress = activePubKey;
-            }
-
-            // 3. EXECUTE CONTRACT WITH COOP ADDRESS
-            // We now pass the cooperative's address to the contract so it knows where to pull the funds from.
             await executeContractCall("request_advance", [
-                nativeToScVal(activePubKey, { type: 'address' }),       // Destination: Driver
-                nativeToScVal(coopAddress, { type: 'address' }),        // Source: Cooperative Pool
-                nativeToScVal(borrowVal * 10000000, { type: 'i128' })   // Amount
+                nativeToScVal(activePubKey, { type: 'address' }),
+                nativeToScVal(borrowVal * 10000000, { type: 'i128' })
             ]);
-
-            // Update UI state
             setDebtState(borrowVal);
-
-            // 4. LOG TO FIREBASE LEDGER
-            await addDoc(collection(db, 'transactions'), {
-                txHash: "SMART_CONTRACT_EXECUTION", // You can map the actual hash here if executeContractCall returns it
-                senderUid: "CONTRACT_POOL",
-                senderName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'SuperAdmin Pool',
-                coopName: stellarData?.role === 'driver' ? (stellarData as any).todaAffiliation : 'N/A',
-                plateNumber: (stellarData as any)?.plateNumber || 'N/A',
-                amount: borrowVal.toString(),
-                asset: 'XLM',
-                type: 'LOAN_ADVANCE',
-                destination: activePubKey,
-                network: appNetwork,
-                timestamp: new Date().toISOString()
-            });
-
-            alert(`Success! ${borrowVal} XLM advance has been successfully issued from the cooperative pool.`);
-
-        } catch (e: any) {
-            console.error("Smart Contract Revert Data:", e);
-            // Show the actual error message instead of the generic testnet warning
-            alert(`Transaction Reverted: ${e.message || "The cooperative pool may have insufficient liquidity, or you lack the XLM required for transaction fees."}`);
-        } finally {
-            setIsProcessing(false);
-        }
+            alert(`Success! ${borrowVal} XLM confirmed on the ledger.`);
+        } catch (e) { alert(`Transaction Reverted: Ensure your wallet extension is set to ${appNetwork} and you have funds.`); }
     };
+
     const handleSettleLoan = async () => {
-        if (!activePubKey || debtState <= 0) return;
-        setIsProcessing(true);
-
+        if (!activePubKey) return;
         try {
-            // 1. Calculate Exact Fees
-            const principal = debtState;
-            const superAdminFee = (principal * 0.002).toFixed(7); // 0.2% HQ
-            const coopFee = (principal * 0.003).toFixed(7);       // 0.3% Cooperative
-
-            // 2. Fetch Destination Wallets from Firestore dynamically
-            let superAdminAddress = '';
-            let coopAddress = '';
-
-            const saQuery = query(collection(db, 'users'), where('role', '==', 'superadmin'));
-            const saSnap = await getDocs(saQuery);
-            if (!saSnap.empty) superAdminAddress = saSnap.docs[0].data().publicKey;
-
-            const coopQuery = query(collection(db, 'users'), where('role', '==', 'admin'), where('coopName', '==', (stellarData as any).todaAffiliation));
-            const coopSnap = await getDocs(coopQuery);
-            if (!coopSnap.empty) coopAddress = coopSnap.docs[0].data().publicKey;
-
-            if (!superAdminAddress || !coopAddress) {
-                throw new Error("Cannot route fees. Missing Superadmin or Cooperative wallet addresses.");
-            }
-
-            // 3. Build Multi-Operation Atomic Transaction
-            const server = new rpc.Server(RPC_SERVER);
-            const account = await server.getAccount(activePubKey);
-            const contract = new Contract(CONTRACT_ID);
-
-            let txBuilder = new TransactionBuilder(account, { fee: "10000", networkPassphrase: NETWORK_PASSPHRASE })
-                // Op 1: Call the smart contract to clear the debt state
-                .addOperation(contract.call("settle_loan", nativeToScVal(activePubKey, { type: 'address' })))
-                // Op 2: 0.2% Fee Payment to Superadmin
-                .addOperation(Operation.payment({
-                    destination: superAdminAddress,
-                    asset: Asset.native(),
-                    amount: superAdminFee
-                }))
-                // Op 3: 0.3% Fee Payment to Cooperative Admin
-                .addOperation(Operation.payment({
-                    destination: coopAddress,
-                    asset: Asset.native(),
-                    amount: coopFee
-                }));
-
-            let tx = txBuilder.setTimeout(30).build();
-
-            // 4. Sign and Submit
-            const preparedTx = await server.prepareTransaction(tx);
-            const response = await signAndSubmitTx(server, preparedTx);
-
-            if (response.status === "ERROR") throw new Error("Transaction submission failed");
-
-            // Wait for Ledger Confirmation
-            let txResult = await server.getTransaction(response.hash);
-            while (txResult.status === "NOT_FOUND" || txResult.status === "PENDING") {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                txResult = await server.getTransaction(response.hash);
-            }
-
-            if (txResult.status === "SUCCESS") {
-                // Record the complex settlement to Firebase Logs
-                await addDoc(collection(db, 'transactions'), {
-                    txHash: response.hash,
-                    senderUid: stellarData?.uid,
-                    senderName: (stellarData as any)?.fullName || 'Node Operator',
-                    plateNumber: (stellarData as any)?.plateNumber || 'N/A',
-                    coopName: (stellarData as any)?.todaAffiliation || 'N/A',
-                    amount: principal.toString(),
-                    asset: 'XLM',
-                    type: 'SETTLEMENT',
-                    feesPaid: {
-                        superAdmin: superAdminFee,
-                        coop: coopFee
-                    },
-                    network: appNetwork,
-                    timestamp: new Date().toISOString()
-                });
-
-                setDebtState(0);
-                alert(`Settlement Complete! ${principal} XLM principal cleared. Paid ${superAdminFee} XLM to HQ and ${coopFee} XLM to Cooperative.`);
-            } else {
-                throw new Error("On-chain execution reverted.");
-            }
-        } catch (e: any) {
-            alert(`Transaction Failed: ${e.message}`);
-        } finally {
-            setIsProcessing(false);
-        }
+            await executeContractCall("settle_loan", [nativeToScVal(activePubKey, { type: 'address' })]);
+            setDebtState(0);
+            alert(`Success! Your loan has been fully settled and fees distributed.`);
+        } catch (e) { alert(`Transaction Reverted: Ensure your wallet extension is set to ${appNetwork}.`); }
     };
+
     const formatCurrency = (amount: number | string) => {
         const num = typeof amount === 'string' ? parseFloat(amount) : amount;
         if (currencyMode === 'PHP') return `₱ ${(num * PHP_EXCHANGE_RATE).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -470,56 +325,24 @@ const Dashboard: React.FC = () => {
     };
 
     if (!stellarData) return <div className="min-h-screen bg-gray-50 dark:bg-[#060610] flex items-center justify-center text-white">Loading Node Profile...</div>;
-    // Intercept users who are not yet approved
-    if (stellarData.status === 'pending') {
-        return (
-            <div className="min-h-screen bg-gray-50 dark:bg-[#060610] flex flex-col items-center justify-center p-6 text-center font-sans">
-                <div className="w-full max-w-md bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-[2rem] p-8 shadow-2xl">
-                    <div className="w-16 h-16 bg-yellow-500/10 text-yellow-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                        {/* Using an hourglass icon or emoji */}
-                        <span className="text-3xl">⏳</span>
-                    </div>
-                    <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2">Node Pending Approval</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-8 leading-relaxed">
-                        Your cryptographic keys have been generated, but your network access requires verification.
-                        Please wait for {stellarData.role === 'admin' ? 'a Super Admin' : 'your Cooperative Admin'} to approve your registration.
-                    </p>
-                    <button
-                        onClick={() => signOut(auth)}
-                        className="w-full py-4 bg-gray-900 text-white dark:bg-white dark:text-black font-black text-sm rounded-xl transition-all hover:bg-gray-800 dark:hover:bg-gray-200"
-                    >
-                        Sign Out Safely
-                    </button>
-                </div>
-            </div>
-        );
-    }
+
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-[#060610] text-gray-900 dark:text-white font-sans overflow-hidden">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} role={stellarData.role} />
             <div className="flex-1 flex flex-col h-full overflow-y-auto relative">
                 <Header theme={theme} toggleTheme={() => setTheme(p => p === 'dark' ? 'light' : 'dark')} onSignOut={() => signOut(auth)} />
-
-                {/* NETWORK STATUS BANNER - Extremely clear indicator for users */}
-                <div className={`w-full py-1.5 px-4 text-center text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 ${appNetwork === 'TESTNET' ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-b border-yellow-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-b border-emerald-500/20'}`}>
-                    <Globe className="w-3.5 h-3.5" />
-                    Operating on Stellar {appNetwork}
-                </div>
-
-                {/* Mobile padding fixed (pb-28) to stop bottom nav overlap */}
-                <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-8 flex flex-col items-center pb-28 md:pb-8">
+                <main className="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-8 flex flex-col items-center pb-32 md:pb-8">
 
                     {activeTab === 'hub' && <HubTab stellarData={stellarData} isAdmin={stellarData.role === 'superadmin' || stellarData.role === 'admin'} currencyMode={currencyMode} setCurrencyMode={setCurrencyMode} formatCurrency={formatCurrency} debtState={debtState} isProcessing={isProcessing} handleRequestAdvance={handleRequestAdvance} handleSettleLoan={handleSettleLoan} appNetwork={appNetwork} handleNetworkChange={handleNetworkChange} />}
-
-                    {activeTab === 'vault' && <VaultTab stellarData={stellarData} externalWallet={externalWallet} activePubKey={activePubKey} xlmBalance={xlmBalance} assetBalances={assetBalances} currencyMode={currencyMode} setCurrencyMode={setCurrencyMode} formatCurrency={formatCurrency} setShowWalletModal={setShowWalletModal} handleDisconnectWallet={handleDisconnectWallet} setShowReceiveModal={setShowReceiveModal} setShowSendModal={setShowSendModal} />}
-
+                    
+                    {activeTab === 'vault' && <VaultTab stellarData={stellarData} externalWallet={externalWallet} activePubKey={activePubKey} xlmBalance={xlmBalance} assetBalances={assetBalances} currencyMode={currencyMode} setCurrencyMode={setCurrencyMode} formatCurrency={formatCurrency} setShowWalletModal={setShowWalletModal} handleDisconnectWallet={handleDisconnectWallet} setShowReceiveModal={setShowReceiveModal} setShowSendModal={setShowSendModal} appNetwork={appNetwork} />}
+                    
                     {activeTab === 'history' && <HistoryTab txHistory={firebaseHistory} appNetwork={appNetwork} />}
-
+                    
                     {activeTab === 'profile' && <ProfileTab stellarData={stellarData} isSuperAdmin={stellarData.role === 'superadmin'} />}
 
                 </main>
             </div>
-
             <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} role={stellarData.role} />
 
             {/* SEND MODAL */}
@@ -552,42 +375,4 @@ const Dashboard: React.FC = () => {
                         <button onClick={() => setShowReceiveModal(false)} className="absolute top-6 right-6 text-gray-500 hover:text-black dark:hover:text-white"><X className="w-5 h-5" /></button>
                         <h3 className="text-xl font-black mb-2">Receive Assets</h3>
                         <p className="text-sm text-gray-500 mb-8">Scan to transfer funds to your wallet.</p>
-                        <div className="bg-white p-4 rounded-2xl mx-auto w-fit mb-8 shadow-sm">
-                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${activePubKey}`} alt="QR Code" className="w-48 h-48" />
-                        </div>
-                        <div className="text-left">
-                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-2">Your Address</label>
-                            <div className="flex gap-2">
-                                <code className="flex-1 bg-gray-50 dark:bg-black/40 p-4 rounded-xl text-[10px] break-all border border-gray-200 dark:border-white/5">{activePubKey}</code>
-                                <button onClick={() => navigator.clipboard.writeText(activePubKey!)} className="p-4 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors"><Copy className="w-4 h-4" /></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* WALLET SELECTION MODAL */}
-            {showWalletModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="w-full max-w-sm bg-white dark:bg-[#0a0a14] border border-gray-200 dark:border-white/10 rounded-[2rem] p-8 shadow-2xl relative text-center">
-                        <button onClick={() => setShowWalletModal(false)} className="absolute top-6 right-6 text-gray-500 hover:text-black dark:hover:text-white"><X className="w-5 h-5" /></button>
-                        <Wallet className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-black mb-2">Connect Wallet</h3>
-                        <p className="text-sm text-gray-500 mb-6">Select your preferred Stellar Network provider to continue.</p>
-
-                        <div className="flex flex-col gap-3">
-                            <button onClick={() => executeWalletConnection('LOBSTR')} className="w-full py-4 px-6 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-sm flex items-center justify-between transition-colors">
-                                LOBSTR Extension <ArrowUpRight className="w-4 h-4 opacity-50" />
-                            </button>
-                            <button onClick={() => executeWalletConnection('Freighter')} className="w-full py-4 px-6 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 rounded-xl font-bold text-sm flex items-center justify-between transition-colors">
-                                Freighter <ArrowUpRight className="w-4 h-4 opacity-50" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-export default Dashboard;
+                        <div className="bg-white p-4 rounded
