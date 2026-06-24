@@ -1,32 +1,37 @@
 # Mobilis
 A Soroban-powered automated micro-credit treasury for unbanked transport drivers in the Philippines.
 
-## Problem and Solution
+![Mobilis Cover Image](https://github.com/user-attachments/assets/416d63f4-1e34-46ae-a734-9e5a59976146)
+
+## 🚀 Live Links & Proof of Deployment
+* **Live Demo:** [Insert your Vercel/Netlify Link Here]
+* **Testnet Contract Address:** `CAVFLXBG4MXGTGECI6WAZXMDNX2H3UWFTMNY4DHK2MR4YUYEEU5STBID`
+* **Sample Transaction Hash:** [Insert a successful Tx Hash from your history tab here]
+
+## 📖 Problem and Solution
 **Problem:** Unbanked tricycle and modernized jeepney drivers in the Philippines cannot afford upfront daily fuel costs and are forced to borrow from predatory local loan sharks charging excessive daily interest just to start their routes.
+
 **Solution:** Local TODAs pool a USDC treasury on Stellar to provide drivers with instant, zero-interest fuel advances that are spent via QR code at partner stations and repaid end-of-shift with a 0.5% protocol fee automatically split via Soroban smart contracts.
 
-## Timeline
-* Day 1: Smart contract development and unit testing in Soroban.
-* Day 2: Firebase backend setup and Stellar testnet deployment. React frontend integration, abstracting wallet keypairs
+## ⚙️ Stellar & Soroban Features Used
+* **Native Token Transfers:** Handling XLM/USDC token transfers between Admin vaults and Driver wallets.
+* **Soroban Smart Contracts:** Immutable ledger to prevent double-borrowing, handle trustless fee-splitting (0.3% to Coop Admin, 0.2% to Platform), and track active debt states.
+* **Freighter / LOBSTR Integration:** Fully abstracted non-custodial wallet connections via `@stellar/freighter-api`.
 
+## 🏗️ Architecture & Tech Stack
+* **Frontend:** React, Vite, Tailwind CSS, Framer Motion
+* **Backend Integration:** Firebase (Authentication & Metadata Storage)
+* **Smart Contract:** Rust (Soroban SDK)
 
-## Stellar Features Used
-* XLM/USDC token transfers.
-* Soroban Smart Contracts for trustless fee-splitting and escrow.
+## 💻 Build and Test Instructions
 
-## Vision and Purpose
-To eradicate predatory micro-lending in the Philippine informal gig economy by leveraging the low cost, high speed, and programmability of the Stellar network, returning economic agency to local driver cooperatives.
-
-## Prerequisites
+### Prerequisites
 * Rust toolchain (`rustup target add wasm32-unknown-unknown`)
 * Soroban CLI (`cargo install --locked soroban-cli`)
+* Node.js & npm
 
-## References and Examples
-* For comprehensive deployment instructions, please refer to the HOW TO DEPLOY GUIDE found in the file Copy-Paste Board.pdf[cite: 1].
-* For an architecture mapping to a frontend application, see the EXAMPLE SMART CONTRACT + FRONTEND repository found in the file Copy-Paste Board.pdf[cite: 1].
-<img width="1907" height="907" alt="image" src="https://github.com/user-attachments/assets/416d63f4-1e34-46ae-a734-9e5a59976146" />
-
-## Build and Test Instructions
-**How to build:**
+### Running the Smart Contract Tests
+Navigate to the contracts directory and run the test suite to execute our 3+ passing unit tests:
 ```bash
-soroban contract build
+cd contracts/Mobilis
+cargo test
