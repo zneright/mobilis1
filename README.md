@@ -1,7 +1,6 @@
 # Mobilis
 A Soroban-powered automated micro-credit treasury for unbanked transport drivers in the Philippines.
 
-CONTRACT ID:CAVFLXBG4MXGTGECI6WAZXMDNX2H3UWFTMNY4DHK2MR4YUYEEU5STBID
 <img width="1913" height="907" alt="image" src="https://github.com/user-attachments/assets/a722e22f-fa77-4339-8dd6-945c1a89ad2a" />
 
 
