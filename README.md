@@ -7,7 +7,8 @@ A Soroban-powered automated micro-credit treasury for unbanked transport drivers
 * **Live Demo:** [Insert your Vercel/Netlify Link Here]
 * **Testnet Contract Address:** `CAVFLXBG4MXGTGECI6WAZXMDNX2H3UWFTMNY4DHK2MR4YUYEEU5STBID`
 * **Sample Transaction Hash:** [Insert a successful Tx Hash from your history tab here]
-
+<img width="1255" height="328" alt="image" src="https://github.com/user-attachments/assets/23435bd2-cf4a-4ac4-b4fb-c73b6af21429" />
+https://stellar.expert/explorer/testnet/tx/64d87c59f1d037475199dfd8e56425cf7a9dc0b183ab6da6838b961eb1dcd481
 ## 📖 Problem and Solution
 **Problem:** Unbanked tricycle and modernized jeepney drivers in the Philippines cannot afford upfront daily fuel costs and are forced to borrow from predatory local loan sharks charging excessive daily interest just to start their routes.
 
