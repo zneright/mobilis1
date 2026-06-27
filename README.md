@@ -44,6 +44,10 @@
 | **Debt Settlement** | [1ab1a0a09207...](https://stellar.expert/explorer/testnet/tx/1ab1a0a09207bbaefda4f8f696866c43eed23995904303d063cb52c0e13994d3) | <img width="280" alt="Tx 3" src="https://github.com/user-attachments/assets/465a469d-54c2-4b6d-9b2a-0a849e90192a" /> |
 | **Fee Routing** | [702d83033adc...](https://stellar.expert/explorer/testnet/tx/702d83033adcdc63375368ab6292b9e5e44a24fba01a8b206e542cf516faf331) | <img width="280" alt="Tx 4" src="https://github.com/user-attachments/assets/06300370-ddeb-41c8-8813-0ad82b9238d2" /> |
 
+<p align="left">
+  <img width="460" height="812" alt="image" src="https://github.com/user-attachments/assets/96cdfb03-5956-441d-ae6d-b53c5f6c708b" />
+</p>
+
 ---
 
 ## 📸 System Evidence & UI Presentation
