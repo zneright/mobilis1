@@ -1,4 +1,4 @@
-# 🚙⚡ Mobilis
+<img width="463" height="806" alt="image" src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" /># 🚙⚡ Mobilis
 
 > A Soroban-powered automated micro-credit treasury for unbanked transport drivers in the Philippines.
 
@@ -48,7 +48,8 @@
 ## 📸 System Evidence & UI Presentation
 
 ### Mobile Responsive UI
-<img src="YOUR_FRONTEND_SCREENSHOT_URL_HERE" width="400" alt="Mobile Responsive App View" />
+<img src="<img width="463" height="806" alt="image" src="https://github.com/user-attachments/assets/52601859-9680-4659-8af7-d97eb2d00dd8" />
+" width="400" alt="Mobile Responsive App View" />
 
 ### CI/CD Deployment Pipeline & Test Suite Performance
 <img src="<img width="967" height="167" alt="image" src="https://github.com/user-attachments/assets/a65b1369-f8bd-44f2-b1f6-18d20e5b8921" />
