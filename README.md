@@ -60,7 +60,7 @@
 
 | Integrated Digital Wallet | Real-Time Activity History Ledger | Profile Management Configuration |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/7d07e90b-49c0-457f-b895-aec8198599d7" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/2aed4705-c6c9-4a9d-ac26-b66f620bd727" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/3f610c97-2766-403d-bfdc-0e317da8b47b" /> |
+| <img src="https://github.com/user-attachments/assets/7d07e90b-49c0-457f-b895-aec8198599d7" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/2aed4705-c6c9-4a9d-ac26-b66f620bd727" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/3f610c97-2766-403d-bfdc-0e317da8b47b" width="240" alt="Profile Tab"/> |
 
 ---
 
