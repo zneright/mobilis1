@@ -1,4 +1,5 @@
-<img width="463" height="806" alt="image" src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" /># 🚙⚡ Mobilis
+```markdown
+# 🚙⚡ Mobilis
 
 > A Soroban-powered automated micro-credit treasury for unbanked transport drivers in the Philippines.
 
@@ -17,8 +18,8 @@
 ## ✅ Submission Checklist & Requirements Met
 
 - [x] **Public GitHub repository:** Complete open-source code availability.
-- [x] **README with complete documentation:** You are reading it.
-- [x] **Minimum 10+ meaningful commits:** Maintained throughout the project timeline.
+- [x] **README with complete documentation:** Detailed configuration structure finalized.
+- [x] **Minimum 10+ meaningful commits:** Maintained consistently throughout development.
 - [x] **Live demo link:** [Mobilis Web App](https://mobilis-10f9a.web.app/)
 - [x] **Contract deployment address:** `CAVFLXBG4MXGTGECI6WAZXMDNX2H3UWFTMNY4DHK2MR4YUYEEU5STBID`
 - [x] **Advanced smart contract development:** Rust-based Soroban contracts managing immutable debt states and trustless fee-splitting.
@@ -47,13 +48,31 @@
 
 ## 📸 System Evidence & UI Presentation
 
-### Mobile Responsive UI
-<img src="<img width="463" height="806" alt="image" src="https://github.com/user-attachments/assets/52601859-9680-4659-8af7-d97eb2d00dd8" />
-" width="400" alt="Mobile Responsive App View" />
+### Mobile Responsive UI Ecosystem
+
+| Landing View | Security Gateway / Login | Driver Registration Node |
+| :---: | :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" width="240" alt="Landing Page" /> | <img src="https://github.com/user-attachments/assets/52601859-9680-4659-8af7-d97eb2d00dd8" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/43663700-7b09-4995-9740-88567ceeb380" width="240" alt="Signup Driver" /> |
+
+| Cooperative Admin Registration | Driver Core Control Hub | Cooperative Command Center |
+| :---: | :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/6451a60d-cd51-47ae-aecd-08b0a668c414" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/8848ad21-e47c-4e59-ab27-0a4da5914432" width="240" alt="Dashboard View" /> | <img src="https://github.com/user-attachments/assets/6a40a33d-526f-4bfb-8eae-bde37091d232" width="240" alt="Cooperative Dashboard Driver" /> |
+
+| Integrated Digital Wallet | Real-Time Activity History Ledger | Profile Management Configuration |
+| :---: | :---: | :---: |
+| <img src="https://github.com/user-attachments/assets/7cf9e3f6-6b6e-44d6-85e4-672e742193cb" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/7d07e90b-49c0-457f-b895-aec8198599d7" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/2aed4705-c6c9-4a9d-ac26-b66f620bd727" width="240" alt="Profile Control" /> |
+
+---
 
 ### CI/CD Deployment Pipeline & Test Suite Performance
-<img src="<img width="967" height="167" alt="image" src="https://github.com/user-attachments/assets/a65b1369-f8bd-44f2-b1f6-18d20e5b8921" />
-" width="700" alt="CI/CD Pipeline Run" />
+
+```text
+running 1 test
+test test::test::test_end_to_end_borrow_and_settle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+```
 
 ---
 
@@ -71,11 +90,13 @@ Mobilis uses a reliable Web2.5 hybrid system designed to bring low-latency struc
 ## 💻 Local Development & Testing Instructions
 
 ### Prerequisites
+
 * [Node.js & npm](https://nodejs.org/)
 * [Rust toolchain](https://www.rust-lang.org/) (`rustup target add wasm32-unknown-unknown`)
 * [Soroban CLI](https://soroban.stellar.org/) (`cargo install --locked soroban-cli`)
 
 ### 1. Smart Contract Compilation & Verification
+
 Navigate to your localized contract directory to compile logic structures and pass system-defined test variants:
 
 ```bash
@@ -83,3 +104,31 @@ cd contracts/Mobilis
 # Run unit assertions verifying contract actions (3+ passing tests)
 cargo test
 
+```
+
+### 2. Frontend Workspace System Initialization
+
+Open a parallel command context window to configure your environment flags and execute the local user interface:
+
+```bash
+cd ../../mobilis-frontend
+npm install
+
+# Initialize your application context values
+cp .env.example .env
+# Populate production environment strings inside the .env wrapper
+
+# Fire up the lightweight development engine server
+npm run dev
+
+```
+
+---
+
+## 🔒 Security, Loading States & Architectural Guardrails
+
+* **Pre-flight Asset Assurances:** The UI prevents double-borrowing by reading the immutable smart contract ledger debt mapping via pre-flight simulations before unlocking operational buttons.
+* **Dynamic Fee Allocation:** Upon repayment, fees are programmatically routed across structural accounts (0.3% to Coop Admins for risk mitigation, 0.2% to Platform core infrastructure maintenance).
+* **Fail-Safe Cryptography:** Wallet actions utilize loading state overlays, intercepting user mistakes and handling runtime ledger rejections cleanly.
+
+---
