@@ -66,9 +66,9 @@
 
 ### CI/CD Deployment Pipeline & Test Suite Performance
 
+<img width="882" height="128" alt="image" src="https://github.com/user-attachments/assets/ca5ee05a-45dd-443f-a09a-c3c70e26073e" />
 ```text
 
-<img width="882" height="128" alt="image" src="https://github.com/user-attachments/assets/ca5ee05a-45dd-443f-a09a-c3c70e26073e" />
 
 🏗️ Architecture & Tech Stack
 Mobilis uses a reliable Web2.5 hybrid system designed to bring low-latency structural integrity to traditional transport workflows.
