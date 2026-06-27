@@ -52,7 +52,7 @@
 
 | Landing View | Security Gateway / Login | Driver Registration Node |
 | :---: | :---: | :---: |
- | <img src="https://github.com/user-attachments/assets/52601859-9680-4659-8af7-d97eb2d00dd8" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/43663700-7b09-4995-9740-88567ceeb380" width="240" alt="Signup Driver" /> |
+| <img src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" width="240" alt="Landing Page" /> | <img src="https://github.com/user-attachments/assets/52601859-9680-4659-8af7-d97eb2d00dd8" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/43663700-7b09-4995-9740-88567ceeb380" width="240" alt="Signup Driver" /> |
 
 | Cooperative Admin Registration | Driver Core Control Hub | Cooperative Command Center |
 | :---: | :---: | :---: |
