@@ -1,6 +1,6 @@
 # 🚙⚡ Mobilis
 
-> A Soroban-powered automated micro-credit treasury for unbanked transport drivers in the Philippines.
+> **A Soroban-Powered Automated Micro-Credit Treasury and Non-Custodial Liquidity Routing Infrastructure for Unbanked Transport Drivers in the Philippines.**
 
 <p align="center">
   <img width="100%" alt="Mobilis Dashboard" src="https://github.com/user-attachments/assets/a722e22f-fa77-4339-8dd6-945c1a89ad2a" />
@@ -8,10 +8,13 @@
 
 ## 📖 Problem & Solution
 
-**The Problem:** Unbanked tricycle and modernized jeepney drivers in the Philippines operate on razor-thin margins. Many cannot afford upfront daily fuel costs and are forced to borrow from predatory local loan sharks charging excessive daily interest rates just to start their routes.
+### The Real-World Problem
+According to recent public transport and macroeconomic research in the Philippines, **over 70% of tricycle, jeepney, and modernized transport operators remain entirely unbanked** or underserved by formal banking institutions. Operating on daily micro-margins, these essential transport workers lack liquid capital to afford upfront morning fuel costs. 
 
-**The Solution:** Mobilis allows local TODAs (Tricycle Operators and Drivers' Associations) to pool a stable crypto treasury on the Stellar network. Drivers receive instant, zero-interest fuel advances via app-generated custodial accounts. The loan is repaid at the end of the shift with a minimal 0.5% protocol fee, automatically split and settled atomically via Soroban smart contracts.
+To bridge this daily gap, drivers are systemically forced to rely on predatory local informal lending networks—historically known as **"5-6" loan structures**—which trap drivers in a cycle of perpetual debt by imposing annualized interest percentages exceeding **200% APR**. Consequently, up to **30-40% of a driver's daily take-home earnings** is extracted by informal lenders simply to maintain route operations.
 
+### The Mobilis Infrastructure Solution
+Mobilis introduces an automated, Web3 high-efficiency liquidity framework powered by **Stellar and Soroban Smart Contracts**. Local transport cooperatives and **TODAs** (Tricycle Operators and Drivers' Associations) establish decentralized, non-custodial treasuries.
 ---
 
 ## ✅ Submission Checklist & Requirements Met
