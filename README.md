@@ -67,10 +67,9 @@
 ### CI/CD Deployment Pipeline & Test Suite Performance
 
 ```text
-running 1 test
-test test::test::test_end_to_end_borrow_and_settle ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+<img width="882" height="128" alt="image" src="https://github.com/user-attachments/assets/ca5ee05a-45dd-443f-a09a-c3c70e26073e" />
+
 🏗️ Architecture & Tech Stack
 Mobilis uses a reliable Web2.5 hybrid system designed to bring low-latency structural integrity to traditional transport workflows.
 
