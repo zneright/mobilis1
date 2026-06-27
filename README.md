@@ -44,10 +44,6 @@
 | **Debt Settlement** | [1ab1a0a09207...](https://stellar.expert/explorer/testnet/tx/1ab1a0a09207bbaefda4f8f696866c43eed23995904303d063cb52c0e13994d3) | <img width="280" alt="Tx 3" src="https://github.com/user-attachments/assets/465a469d-54c2-4b6d-9b2a-0a849e90192a" /> |
 | **Fee Routing** | [702d83033adc...](https://stellar.expert/explorer/testnet/tx/702d83033adcdc63375368ab6292b9e5e44a24fba01a8b206e542cf516faf331) | <img width="280" alt="Tx 4" src="https://github.com/user-attachments/assets/06300370-ddeb-41c8-8813-0ad82b9238d2" /> |
 
-<p align="left">
-  <img width="460" height="812" alt="image" src="https://github.com/user-attachments/assets/96cdfb03-5956-441d-ae6d-b53c5f6c708b" />
-</p>
-
 ---
 
 ## 📸 System Evidence & UI Presentation
@@ -60,7 +56,7 @@
 
 | Cooperative Admin Registration | Driver Core Control Hub | Cooperative Command Center |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/6451a60d-cd51-47ae-aecd-08b0a668c414" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/8848ad21-e47c-4e59-ab27-0a4da5914432" width="240" alt="Dashboard View" /> | <img src="https://github.com/user-attachments/assets/6a40a33d-526f-4bfb-8eae-bde37091d232" width="240" alt="Cooperative Dashboard Driver" /> |
+| <img src="https://github.com/user-attachments/assets/6451a60d-cd51-47ae-aecd-08b0a668c414" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/96cdfb03-5956-441d-ae6d-b53c5f6c708b" width="240" alt="Driver Profile Control Hub" /> | <img src="https://github.com/user-attachments/assets/6a40a33d-526f-4bfb-8eae-bde37091d232" width="240" alt="Cooperative Dashboard Driver" /> |
 
 | Integrated Digital Wallet | Real-Time Activity History Ledger | Profile Management Configuration |
 | :---: | :---: | :---: |
