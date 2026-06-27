@@ -52,15 +52,15 @@
 
 | Landing View | Security Gateway / Login | Driver Registration Node |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" width="240" alt="Landing Page" /> | <img src="https://github.com/user-attachments/assets/52601859-9680-4659-8af7-d97eb2d00dd8" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/43663700-7b09-4995-9740-88567ceeb380" width="240" alt="Signup Driver" /> |
+| <img src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" width="240" alt="Landing Page" /> | <img src="https://github.com/user-attachments/assets/43663700-7b09-4995-9740-88567ceeb380" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/6451a60d-cd51-47ae-aecd-08b0a668c414" width="240" alt="Signup Driver" /> |
 
 | Cooperative Admin Registration | Driver Core Control Hub | Cooperative Command Center |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/6451a60d-cd51-47ae-aecd-08b0a668c414" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/96cdfb03-5956-441d-ae6d-b53c5f6c708b" width="240" alt="Driver Profile Control Hub" /> | <img src="https://github.com/user-attachments/assets/6a40a33d-526f-4bfb-8eae-bde37091d232" width="240" alt="Cooperative Dashboard Driver" /> |
+| <img src="https://github.com/user-attachments/assets/96cdfb03-5956-441d-ae6d-b53c5f6c708b" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/6a40a33d-526f-4bfb-8eae-bde37091d232" width="240" alt="Driver Profile Control Hub" /> | <img src="https://github.com/user-attachments/assets/7cf9e3f6-6b6e-44d6-85e4-672e742193cb" width="240" alt="Cooperative Dashboard Driver" /> |
 
 | Integrated Digital Wallet | Real-Time Activity History Ledger | Profile Management Configuration |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/7cf9e3f6-6b6e-44d6-85e4-672e742193cb" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/7d07e90b-49c0-457f-b895-aec8198599d7" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/2aed4705-c6c9-4a9d-ac26-b66f620bd727" width="240" alt="Profile Control" /> |
+| <img src="https://github.com/user-attachments/assets/7d07e90b-49c0-457f-b895-aec8198599d7" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/2aed4705-c6c9-4a9d-ac26-b66f620bd727" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/c28400fc-6e14-48b4-ad5e-30dee24ef832" width="240" alt="Profile Control" /> |
 
 ---
 
