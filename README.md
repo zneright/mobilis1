@@ -44,6 +44,7 @@
 | **Debt Settlement** | [1ab1a0a09207...](https://stellar.expert/explorer/testnet/tx/1ab1a0a09207bbaefda4f8f696866c43eed23995904303d063cb52c0e13994d3) | <img width="280" alt="Tx 3" src="https://github.com/user-attachments/assets/465a469d-54c2-4b6d-9b2a-0a849e90192a" /> |
 | **Fee Routing** | [702d83033adc...](https://stellar.expert/explorer/testnet/tx/702d83033adcdc63375368ab6292b9e5e44a24fba01a8b206e542cf516faf331) | <img width="280" alt="Tx 4" src="https://github.com/user-attachments/assets/06300370-ddeb-41c8-8813-0ad82b9238d2" /> |
 
+
 ---
 
 ## 📸 System Evidence & UI Presentation
@@ -52,15 +53,17 @@
 
 | Landing View | Security Gateway / Login | Driver Registration Node |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" width="240" alt="Landing Page" /> | <img src="" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/6451a60d-cd51-47ae-aecd-08b0a668c414" width="240" alt="Signup Driver" /> |
+| <img src="https://github.com/user-attachments/assets/b4a66160-d9cf-4511-907c-dc3e33b8840d" width="240" alt="Landing Page" /> | <img src="https://github.com/user-attachments/assets/818d9164-fc87-4925-95f8-c023855cc99d" width="240" alt="Login View" /> | <img src="https://github.com/user-attachments/assets/025aefda-5177-4659-9b32-037de1b80bae" width="240" alt="Signup Driver" /> |
 
 | Cooperative Admin Registration | Driver Core Control Hub | Cooperative Command Center |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/96cdfb03-5956-441d-ae6d-b53c5f6c708b" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/6a40a33d-526f-4bfb-8eae-bde37091d232" width="240" alt="Driver Profile Control Hub" /> | <img src="https://github.com/user-attachments/assets/7cf9e3f6-6b6e-44d6-85e4-672e742193cb" width="240" alt="Cooperative Dashboard Driver" /> |
+| <img src="https://github.com/user-attachments/assets/a7ecac52-0080-437c-998d-1460ac524976" width="240" alt="Signup Cooperative" /> | <img src="https://github.com/user-attachments/assets/fb7881d8-3c83-4f86-9234-e16e07669f01" width="240" alt="Driver Profile Control Hub" /> | <img src="https://github.com/user-attachments/assets/447adb3d-2ede-402a-a4e3-f208d2639bbb" width="240" alt="Cooperative Dashboard Driver" /> |
 
 | Integrated Digital Wallet | Real-Time Activity History Ledger | Profile Management Configuration |
 | :---: | :---: | :---: |
-| <img src="https://github.com/user-attachments/assets/7d07e90b-49c0-457f-b895-aec8198599d7" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/2aed4705-c6c9-4a9d-ac26-b66f620bd727" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/c28400fc-6e14-48b4-ad5e-30dee24ef832" width="240" alt="Profile Control" /> |
+| <img src="https://github.com/user-attachments/assets/6f7dbfa4-ed3f-49d9-afe5-3f2a3da6820d" width="240" alt="Wallet Tab" /> | <img src="https://github.com/user-attachments/assets/301e56b7-9a68-47a0-aa74-c493ed47940e" width="240" alt="Transactions Ledger" /> | <img src="https://github.com/user-attachments/assets/8acd4ec7-1bbe-4a45-9747-eca2a1fc19b8" width="240" alt="Profile Control" /> 
+<img width="457" height="808" alt="image" src="" />
+
 
 ---
 
