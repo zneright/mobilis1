@@ -51,7 +51,8 @@
 <img src="YOUR_FRONTEND_SCREENSHOT_URL_HERE" width="400" alt="Mobile Responsive App View" />
 
 ### CI/CD Deployment Pipeline & Test Suite Performance
-<img src="YOUR_CICD_SCREENSHOT_URL_HERE" width="700" alt="CI/CD Pipeline Run" />
+<img src="<img width="967" height="167" alt="image" src="https://github.com/user-attachments/assets/a65b1369-f8bd-44f2-b1f6-18d20e5b8921" />
+" width="700" alt="CI/CD Pipeline Run" />
 
 ---
 
